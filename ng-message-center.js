@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('federicot.ng-message-center', [])
-.factory('ngMessageCenter', ['$timeout', function($timeout) {
+.factory('ngMessageCenter', ['$rootScope', function($rootScope) {
     var messages = {
         next: [],
         current: []
@@ -13,7 +13,6 @@ angular.module('federicot.ng-message-center', [])
             stack: false,
             timeout: 3000
         },
-        type: '',
         error: function(options) {
             options.type = 'alert-danger';
             this.add(options);
@@ -33,21 +32,15 @@ angular.module('federicot.ng-message-center', [])
         add: function(options) {
             id = id + 1;
             var msg;
-            options = angular.extend({}, this.defaultOptions, options);
+            msg = angular.extend({}, this.defaultOptions, options);
 
-            if (!options.stack) {
+            if (!msg.stack) {
                 this.clear();
             }
 
-            msg = {
-                'id': id,
-                type: options.type,
-                'title': options.title,
-                'text': options.text,
-                'timeout': options.timeout,
-                close: function() {
-                    service.remove(this);
-                }
+            msg.id = id;
+            msg.close = function() {
+                service.remove(this);
             };
 
             if (options.next) {
@@ -76,6 +69,13 @@ angular.module('federicot.ng-message-center', [])
         }
     };
 
+    $rootScope.$on('$locationChangeStart', function() {
+        service.clear()
+    });
+    $rootScope.$on('$locationChangeSuccess', function() {
+        service.moveNextToCurrent()
+    });
+
     return service;
 }])
 .directive('ngmessagecenterMessages', ['$rootScope', 'ngMessageCenter', function($rootScope, ngMessageCenter) {
@@ -89,12 +89,6 @@ angular.module('federicot.ng-message-center', [])
         template: templateStr,
         link: function(scope, element, attrs) {
             scope.messages = ngMessageCenter.get();
-            $rootScope.$on('$locationChangeStart', function() {
-                ngMessageCenter.clear()
-            });
-            $rootScope.$on('$locationChangeSuccess', function() {
-                ngMessageCenter.moveNextToCurrent()
-            });
         }
     };
 }])
@@ -110,8 +104,8 @@ angular.module('federicot.ng-message-center', [])
         restrict: 'E',
         template: templateStr,
         link: function(scope, element, attrs) {
-            var $element = angular.element(element).children().first();
             if (scope.message.timeout) {
+                var $element = angular.element(element).children().first();
                 $element.on('closed.bs.alert', function() {
                     scope.message.close();
                 });
@@ -119,7 +113,6 @@ angular.module('federicot.ng-message-center', [])
                     $element.alert('close');
                 }, scope.message.timeout);
             }
-
         }
     };
 }]);
