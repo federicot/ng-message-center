@@ -2,13 +2,11 @@
 
 angular.module('federicot.ng-message-center', [])
 .factory('ngMessageCenter', ['$rootScope', function($rootScope) {
-    var messages = {
-        next: [],
-        current: []
-    };
+    var messages = {};
     var id = 0;
     var service = {
         defaultOptions: {
+            name: 'default',
             next: false,
             stack: false,
             timeout: 3000
@@ -35,7 +33,7 @@ angular.module('federicot.ng-message-center', [])
             msg = angular.extend({}, this.defaultOptions, options);
 
             if (!msg.stack) {
-                this.clear();
+                this.clear(msg.name);
             }
 
             msg.id = id;
@@ -43,29 +41,47 @@ angular.module('federicot.ng-message-center', [])
                 service.remove(this);
             };
 
-            if (options.next) {
-                messages.next.push(msg);
+            if (msg.next) {
+                messages[msg.name].next.push(msg);
             } else {
-                messages.current.push(msg);
+                messages[msg.name].current.push(msg);
             }
         },
         remove: function(message) {
-            for(var i = 0, len = messages.current.length; i < len; i++) {
-                if (messages.current[i].id === message.id) {
-                    messages.current.splice(i, 1);
+            for(var i = 0, len = messages[message.name].current.length; i < len; i++) {
+                if (messages[message.name].current[i].id === message.id) {
+                    messages[message.name].current.splice(i, 1);
                     break;
                 }
             }
         },
-        clear: function() {
-            messages.current.length = 0;
+        clear: function(name) {
+            if (name) {
+                messages[name].current.length = 0;
+                return;
+            }
+            angular.forEach(messages, function(value, key) {
+                messages[key].current.length = 0;
+            });
+        },
+        createSpace: function(name) {
+            if (!messages[name]) {
+                messages[name] = {
+                    next: [],
+                    current: []
+                }
+            }
         },
         moveNextToCurrent: function() {
-            angular.copy(messages.next, messages.current);
-            messages.next.length = 0;
+            angular.forEach(messages, function(value, key) {
+                angular.copy(messages[key].next, messages[key].current);
+                messages[key].next.length = 0;
+            });
         },
-        get: function() {
-            return messages;
+        get: function(name) {
+            if (!name) name = 'default';
+            this.createSpace(name);
+            return messages[name];
         }
     };
 
@@ -76,9 +92,12 @@ angular.module('federicot.ng-message-center', [])
         service.moveNextToCurrent()
     });
 
+    service.createSpace('default');
+
     return service;
 }])
-.directive('ngmessagecenterMessages', ['$rootScope', 'ngMessageCenter', function($rootScope, ngMessageCenter) {
+
+.directive('ngmessagecenterMessages', ['ngMessageCenter', function(ngMessageCenter) {
     var templateStr = '<div class="row" ng-repeat="message in messages.current">' +
                       ' <div class="col-lg-12">' +
                       '     <ngmessagecenter-message message="message"></ngmessagecenter-message>' +
@@ -88,12 +107,13 @@ angular.module('federicot.ng-message-center', [])
         restrict: 'E',
         template: templateStr,
         link: function(scope, element, attrs) {
-            scope.messages = ngMessageCenter.get();
+            var name = (attrs.name) ? attrs.name : 'default';
+            scope.messages = ngMessageCenter.get(name);
         }
     };
 }])
 
-.directive('ngmessagecenterMessage', ['$timeout', 'ngMessageCenter', function($timeout, ngMessageCenter) {
+.directive('ngmessagecenterMessage', ['$timeout', function($timeout) {
     var templateStr = '<div class="alert fade in" role="alert" ng-class="message.type">' +
                       ' <button type="button" class="close" data-dismiss="alert">' +
                       '      <span aria-hidden="true">×</span>' +
@@ -109,7 +129,7 @@ angular.module('federicot.ng-message-center', [])
                 $element.on('closed.bs.alert', function() {
                     scope.message.close();
                 });
-                scope.timer = $timeout(function() {
+                $timeout(function() {
                     $element.alert('close');
                 }, scope.message.timeout);
             }
