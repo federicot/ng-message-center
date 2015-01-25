@@ -57,7 +57,7 @@ angular.module('federicot.ng-message-center', [])
         },
         clear: function(name) {
             if (name) {
-                messages[name].current.length = 0;
+                if (messages[name]) messages[name].current.length = 0;
                 return;
             }
             angular.forEach(messages, function(value, key) {
@@ -118,19 +118,15 @@ angular.module('federicot.ng-message-center', [])
                       ' <button type="button" class="close" data-dismiss="alert">' +
                       '      <span aria-hidden="true">×</span>' +
                       ' </button>' +
-                      ' <strong ng-if="message.title">{{message.title}} </strong>{{message.text}}' +
+                      ' <strong ng-if="message.title">{{message.title}}</strong><span>&nbsp;</span>{{message.text}}' +
                       '</div>';
     return {
         restrict: 'E',
         template: templateStr,
         link: function(scope, element, attrs) {
             if (scope.message.timeout) {
-                var $element = angular.element(element).children().first();
-                $element.on('closed.bs.alert', function() {
-                    scope.message.close();
-                });
                 $timeout(function() {
-                    $element.alert('close');
+                    scope.message.close();
                 }, scope.message.timeout);
             }
         }
