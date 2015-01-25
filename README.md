@@ -52,3 +52,11 @@ next: false,
 stack: false,
 timeout: 3000
 ```
+
+Test
+====
+```bash
+$ npm install
+$ bower install
+$ npm test
+```
