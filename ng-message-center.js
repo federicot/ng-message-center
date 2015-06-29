@@ -32,6 +32,11 @@ angular.module('federicot.ng-message-center', [])
             var msg;
             msg = angular.extend({}, this.defaultOptions, options);
 
+            if (messages[msg.name] === undefined) {
+                console.error("Directive ngmessagecenter-messages with name '" + msg.name + "' can't be found.");
+                return;
+            }
+
             if (!msg.stack) {
                 this.clear(msg.name);
             }
