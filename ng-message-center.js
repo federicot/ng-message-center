@@ -97,20 +97,29 @@ angular.module('federicot.ng-message-center', [])
     return service;
 }])
 
-.directive('ngmessagecenterMessages', ['ngMessageCenter', function(ngMessageCenter) {
-    var templateStr = '<div class="row" ng-repeat="message in messages.current">' +
-                      ' <div class="col-lg-12">' +
-                      '     <ngmessagecenter-message message="message"></ngmessagecenter-message>' +
-                      ' </div>' +
-                      '</div>';
-    return {
-        restrict: 'E',
-        template: templateStr,
-        link: function(scope, element, attrs) {
-            var name = (attrs.name) ? attrs.name : 'default';
-            scope.messages = ngMessageCenter.get(name);
-        }
-    };
+.directive('ngmessagecenterMessages', ['ngMessageCenter', '$compile', function(ngMessageCenter, $compile) {
+	var templateStr = '<div class="row">' +
+		' <div class="col-lg-12">' +
+		'     <ngmessagecenter-message message="message"></ngmessagecenter-message>' +
+		' </div>' +
+		'</div>';
+	return {
+		restrict: 'E',
+		template: templateStr,
+		link: function(scope, element, attrs) {
+			var name = (attrs.name) ? attrs.name : 'default';
+
+			if (scope.messages === undefined) {
+				scope.messages = new Object();
+			}
+
+			if (!element.attr('ng-repeat')) {
+				scope.messages[name] = ngMessageCenter.get(name);
+				element.attr('ng-repeat', 'message in messages[\'' + name + '\'].current');
+				$compile(element)(scope);
+			}
+		}
+	};
 }])
 
 .directive('ngmessagecenterMessage', ['$timeout', function($timeout) {
