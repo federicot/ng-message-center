@@ -133,7 +133,7 @@ angular.module('federicot.ng-message-center', [])
         restrict: 'E',
         template: templateStr,
         link: function(scope, element, attrs) {
-            if (scope.message.timeout) {
+            if (scope.message !== undefined && scope.message.timeout) {
                 var $element = angular.element(element).children().first();
                 $element.on('closed.bs.alert', function() {
                     scope.message.close();
